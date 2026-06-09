@@ -45,13 +45,25 @@ async function handlePush(supabase: Awaited<ReturnType<typeof createServiceClien
 
   if (!repo || repo.default_branch !== branch) return;
 
-  await supabase.from('job_runs').insert({
+  const { data: job } = await supabase.from('job_runs').insert({
     repo_id: repo.id,
     commit_sha: headCommit.id as string,
     commit_message: ((headCommit.message as string) ?? '').slice(0, 120),
     branch,
     status: 'pending',
-  });
+  }).select().single();
+
+  if (job) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    fetch(`${appUrl}/api/repos/${repo.id}/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.INTERNAL_JOB_SECRET ?? '',
+      },
+      body: JSON.stringify({ job_run_id: job.id }),
+    }).catch(() => {});
+  }
 }
 
 async function handleInstallation(supabase: Awaited<ReturnType<typeof createServiceClient>>, payload: Record<string, unknown>) {

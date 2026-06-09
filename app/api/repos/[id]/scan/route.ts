@@ -69,6 +69,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select()
     .single();
 
+  if (job) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    fetch(`${appUrl}/api/repos/${id}/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.INTERNAL_JOB_SECRET ?? '',
+      },
+      body: JSON.stringify({ job_run_id: job.id }),
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ job_run_id: job?.id });
 }
 
