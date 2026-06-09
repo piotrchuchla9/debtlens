@@ -73,9 +73,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!job) return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
 
   // Run analysis synchronously in this request (60s timeout via vercel.json)
-  await runJobInternal(job.id, id);
+  const result = await runJobInternal(job.id, id);
 
-  return NextResponse.json({ job_run_id: job.id });
+  return result;
 }
 
 async function runJobInternal(jobRunId: string, repoId: string): Promise<NextResponse> {

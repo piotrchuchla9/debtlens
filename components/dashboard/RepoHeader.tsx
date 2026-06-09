@@ -60,12 +60,12 @@ export function RepoHeader({ repo, latestJob, repoId }: RepoHeaderProps) {
     try {
       const res = await fetch(`/api/repos/${repoId}/scan`, { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? 'Failed to trigger scan');
+      if (!res.ok || data.error) {
+        toast.error(data.error ?? 'Scan failed');
       } else {
         toast.success('Scan complete — results updated!');
-        router.refresh();
       }
+      router.refresh();
     } catch {
       toast.error('Network error');
     } finally {

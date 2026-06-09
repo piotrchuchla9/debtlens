@@ -3,24 +3,23 @@ import { writeFile, access } from 'fs/promises';
 import { join } from 'path';
 import { KnipOutput } from '@/types';
 
-const DEFAULT_KNIP_CONFIG = `export default {
+const DEFAULT_KNIP_CONFIG = JSON.stringify({
   ignore: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**'],
   ignoreDependencies: ['typescript', 'eslint', 'prettier'],
-  ignoreExportsUsedInFile: true
-};
-`;
+  ignoreExportsUsedInFile: true,
+}, null, 2);
 
 export async function runKnip(
   workDir: string,
   configOverride?: Record<string, unknown> | null
 ): Promise<{ output: KnipOutput; version: string }> {
-  const configPath = join(workDir, 'knip.config.ts');
-
+  // Use knip.json — avoids TypeScript loader issues in environments without node_modules
+  const configPath = join(workDir, 'knip.json');
   try {
     await access(configPath);
   } catch {
     const configContent = configOverride
-      ? `export default ${JSON.stringify(configOverride, null, 2)};\n`
+      ? JSON.stringify(configOverride, null, 2)
       : DEFAULT_KNIP_CONFIG;
     await writeFile(configPath, configContent, 'utf-8');
   }
