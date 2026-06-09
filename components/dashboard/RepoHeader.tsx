@@ -54,6 +54,13 @@ export function RepoHeader({ repo, latestJob, repoId }: RepoHeaderProps) {
     return () => clearInterval(tick);
   }, [scanning]);
 
+  // Keep sidebar status live while scan is in-flight
+  useEffect(() => {
+    if (!scanning) return;
+    const interval = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(interval);
+  }, [scanning, router]);
+
   async function triggerScan() {
     setScanning(true);
     setStepIdx(0);
