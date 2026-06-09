@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { writeFile, access } from 'fs/promises';
+import { writeFile, access, unlink } from 'fs/promises';
 import { join } from 'path';
 import { KnipOutput } from '@/types';
 
@@ -13,16 +13,18 @@ export async function runKnip(
   workDir: string,
   configOverride?: Record<string, unknown> | null
 ): Promise<{ output: KnipOutput; version: string }> {
-  // Use knip.json — avoids TypeScript loader issues in environments without node_modules
+  // Remove any existing knip config that might require TypeScript to load
+  const existingConfigs = [
+    'knip.ts', 'knip.js', 'knip.config.ts', 'knip.config.js',
+    '.knip.ts', '.knip.js', '.knip.config.ts',
+  ];
+  await Promise.all(existingConfigs.map(f => unlink(join(workDir, f)).catch(() => {})));
+
   const configPath = join(workDir, 'knip.json');
-  try {
-    await access(configPath);
-  } catch {
-    const configContent = configOverride
-      ? JSON.stringify(configOverride, null, 2)
-      : DEFAULT_KNIP_CONFIG;
-    await writeFile(configPath, configContent, 'utf-8');
-  }
+  const configContent = configOverride
+    ? JSON.stringify(configOverride, null, 2)
+    : DEFAULT_KNIP_CONFIG;
+  await writeFile(configPath, configContent, 'utf-8');
 
   const output = await new Promise<string>((resolve, reject) => {
     let stdout = '';
@@ -30,7 +32,7 @@ export async function runKnip(
 
     const proc = spawn(
       'npx',
-      ['knip@5', '--reporter', 'json', '--no-exit-code'],
+      ['knip@5', '--config', configPath, '--reporter', 'json', '--no-exit-code'],
       {
         cwd: workDir,
         env: {
