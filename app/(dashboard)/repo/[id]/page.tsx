@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { HealthScoreCard } from '@/components/dashboard/HealthScoreCard';
 import { CommitTable } from '@/components/dashboard/CommitTable';
 import { BreakdownTabs } from '@/components/dashboard/BreakdownTabs';
-import { BadgeEmbed } from '@/components/dashboard/BadgeEmbed';
 import { TrendChartWrapper } from '@/components/charts/TrendChartWrapper';
 import { RepoHeader } from '@/components/dashboard/RepoHeader';
 import { ScanPoller } from '@/components/dashboard/ScanPoller';
@@ -78,9 +77,6 @@ export default async function RepoPage({ params }: PageProps) {
     .limit(1)
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-
   const isJobActive = latestJob?.status === 'pending' || latestJob?.status === 'running';
 
   return (
@@ -92,25 +88,13 @@ export default async function RepoPage({ params }: PageProps) {
         repoId={id}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <HealthScoreCard
-          total={latest?.total ?? 0}
-          delta={latest?.delta ?? null}
-          files={latest?.files ?? 0}
-          exports={latest?.exports ?? 0}
-          deps={latest?.deps ?? 0}
-        />
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">README Badge</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BadgeEmbed repoId={id} appUrl={appUrl} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <HealthScoreCard
+        total={latest?.total ?? 0}
+        delta={latest?.delta ?? null}
+        files={latest?.files ?? 0}
+        exports={latest?.exports ?? 0}
+        deps={latest?.deps ?? 0}
+      />
 
       <Card>
         <CardHeader>

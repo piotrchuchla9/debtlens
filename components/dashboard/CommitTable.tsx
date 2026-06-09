@@ -1,14 +1,14 @@
+import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { TrendPoint } from '@/types';
-import { cn, deltaColor, deltaLabel, formatDate, shortSha } from '@/lib/utils';
+import { cn, deltaColor, deltaLabel, formatDate } from '@/lib/utils';
 
 interface CommitTableProps {
   trend: TrendPoint[];
   repoId: string;
 }
 
-export function CommitTable({ trend }: CommitTableProps) {
+export function CommitTable({ trend, repoId }: CommitTableProps) {
   const recent = [...trend].reverse().slice(0, 10);
 
   return (
@@ -23,14 +23,26 @@ export function CommitTable({ trend }: CommitTableProps) {
       </TableHeader>
       <TableBody>
         {recent.map(point => (
-          <TableRow key={point.sha}>
+          <TableRow key={point.sha} className="cursor-pointer hover:bg-muted/50">
             <TableCell>
-              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{point.sha}</code>
+              <Link href={`/repo/${repoId}/commit/${point.sha}`} className="block">
+                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{point.sha}</code>
+              </Link>
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">{formatDate(point.date)}</TableCell>
-            <TableCell className="text-right font-medium tabular-nums">{point.total}</TableCell>
+            <TableCell className="text-sm text-muted-foreground">
+              <Link href={`/repo/${repoId}/commit/${point.sha}`} className="block">
+                {formatDate(point.date)}
+              </Link>
+            </TableCell>
+            <TableCell className="text-right font-medium tabular-nums">
+              <Link href={`/repo/${repoId}/commit/${point.sha}`} className="block">
+                {point.total}
+              </Link>
+            </TableCell>
             <TableCell className={cn('text-right font-medium tabular-nums', deltaColor(point.delta))}>
-              {deltaLabel(point.delta)}
+              <Link href={`/repo/${repoId}/commit/${point.sha}`} className="block">
+                {deltaLabel(point.delta)}
+              </Link>
             </TableCell>
           </TableRow>
         ))}
