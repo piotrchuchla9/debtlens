@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { BranchCombobox } from '@/components/dashboard/BranchCombobox';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { AlertConfig, Repository } from '@/types';
@@ -58,16 +59,15 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="branch">Branch to scan</Label>
-            <Input
-              id="branch"
-              placeholder={repo.default_branch}
+            <Label>Branch to scan</Label>
+            <BranchCombobox
+              repoId={repo.id}
               value={scanBranch}
-              onChange={e => setScanBranch(e.target.value)}
-              className="w-64"
+              defaultBranch={repo.default_branch}
+              onChange={setScanBranch}
             />
             <p className="text-xs text-muted-foreground">
-              Leave empty to use the default branch (<code className="rounded bg-muted px-1 py-0.5">{repo.default_branch}</code>).
+              Leave as default or pick another branch to scan.
             </p>
           </div>
         </CardContent>
