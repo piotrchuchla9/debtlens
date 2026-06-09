@@ -32,7 +32,15 @@ export async function runKnip(
     const proc = spawn(
       'npx',
       ['knip@5', '--reporter', 'json', '--no-exit-code'],
-      { cwd: workDir, env: { ...process.env, NODE_ENV: 'production' } }
+      {
+        cwd: workDir,
+        env: {
+          ...process.env,
+          NODE_ENV: 'production',
+          HOME: '/tmp',
+          npm_config_cache: '/tmp/.npm',
+        },
+      }
     );
 
     proc.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
@@ -53,7 +61,10 @@ export async function runKnip(
 
   const versionOutput = await new Promise<string>((resolve) => {
     let out = '';
-    const proc = spawn('npx', ['knip@5', '--version'], { cwd: workDir });
+    const proc = spawn('npx', ['knip@5', '--version'], {
+      cwd: workDir,
+      env: { ...process.env, HOME: '/tmp', npm_config_cache: '/tmp/.npm' },
+    });
     proc.stdout.on('data', (c: Buffer) => (out += c.toString()));
     proc.on('close', () => resolve(out.trim()));
     proc.on('error', () => resolve('5.x'));
