@@ -76,6 +76,7 @@ export function BranchCombobox({ repoId, value, defaultBranch, onChange }: Branc
                   <CommandItem
                     value=""
                     onSelect={() => { onChange(''); setOpen(false); }}
+                    onMouseDown={(e) => { e.preventDefault(); onChange(''); setOpen(false); }}
                   >
                     <Check className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
                     <span>{defaultBranch}</span>
@@ -85,7 +86,8 @@ export function BranchCombobox({ repoId, value, defaultBranch, onChange }: Branc
                     <CommandItem
                       key={branch}
                       value={branch}
-                      onSelect={(v) => { onChange(v); setOpen(false); }}
+                      onSelect={() => { onChange(branch); setOpen(false); }}
+                      onMouseDown={(e) => { e.preventDefault(); onChange(branch); setOpen(false); }}
                     >
                       <Check className={cn('mr-2 h-4 w-4', value === branch ? 'opacity-100' : 'opacity-0')} />
                       {branch}
