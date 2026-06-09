@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "app/api/repos/[id]/scan/route.ts": { "maxDuration": 60 },
+    "app/api/github/webhook/route.ts": { "maxDuration": 10 }
+  }
+}
