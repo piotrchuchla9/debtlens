@@ -57,7 +57,12 @@ export async function runKnip(
     proc.on('error', reject);
   });
 
-  const parsed: KnipOutput = JSON.parse(output);
+  // Knip may print warnings/errors before the JSON — find the first [ or {
+  const jsonStart = output.search(/[[{]/);
+  if (jsonStart === -1) {
+    throw new Error(`Knip output contains no JSON. Output: ${output.slice(0, 300)}`);
+  }
+  const parsed: KnipOutput = JSON.parse(output.slice(jsonStart));
 
   const versionOutput = await new Promise<string>((resolve) => {
     let out = '';
