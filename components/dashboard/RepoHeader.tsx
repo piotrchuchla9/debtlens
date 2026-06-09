@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ const statusConfig = {
 
 export function RepoHeader({ repo, latestJob, repoId }: RepoHeaderProps) {
   const [scanning, setScanning] = useState(false);
+  const router = useRouter();
   const status = latestJob?.status as keyof typeof statusConfig | undefined;
   const statusCfg = status ? statusConfig[status] : null;
   const isProcessing = status === 'running' || status === 'pending';
@@ -33,8 +35,12 @@ export function RepoHeader({ repo, latestJob, repoId }: RepoHeaderProps) {
     try {
       const res = await fetch(`/api/repos/${repoId}/scan`, { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) toast.error(data.error ?? 'Failed to trigger scan');
-      else toast.success('Scan queued — results will appear shortly');
+      if (!res.ok) {
+        toast.error(data.error ?? 'Failed to trigger scan');
+      } else {
+        toast.success('Scan complete!');
+        router.refresh();
+      }
     } catch {
       toast.error('Network error');
     } finally {

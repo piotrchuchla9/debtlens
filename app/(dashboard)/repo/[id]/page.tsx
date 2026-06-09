@@ -6,6 +6,7 @@ import { BreakdownTabs } from '@/components/dashboard/BreakdownTabs';
 import { BadgeEmbed } from '@/components/dashboard/BadgeEmbed';
 import { TrendChartWrapper } from '@/components/charts/TrendChartWrapper';
 import { RepoHeader } from '@/components/dashboard/RepoHeader';
+import { ScanPoller } from '@/components/dashboard/ScanPoller';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendPoint, FileBreakdown, ExportBreakdown } from '@/types';
 
@@ -79,8 +80,11 @@ export default async function RepoPage({ params }: PageProps) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
+  const isJobActive = latestJob?.status === 'pending' || latestJob?.status === 'running';
+
   return (
     <div className="space-y-6">
+      <ScanPoller isActive={isJobActive} />
       <RepoHeader
         repo={repo}
         latestJob={latestJob}

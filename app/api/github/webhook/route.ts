@@ -107,6 +107,11 @@ async function handleInstallation(supabase: Awaited<ReturnType<typeof createServ
       installation_id: installation.id as number,
       owner_user_id: profile.id,
     }, { onConflict: 'github_org_id' });
+  } else {
+    await supabase
+      .from('user_profiles')
+      .update({ installation_id: installation.id as number })
+      .eq('id', profile.id);
   }
 
   for (const r of repos) {

@@ -69,19 +69,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select()
     .single();
 
-  if (job) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-    fetch(`${appUrl}/api/repos/${id}/scan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': process.env.INTERNAL_JOB_SECRET ?? '',
-      },
-      body: JSON.stringify({ job_run_id: job.id }),
-    }).catch(() => {});
-  }
+  if (!job) return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
 
-  return NextResponse.json({ job_run_id: job?.id });
+  // Run analysis synchronously in this request (60s timeout via vercel.json)
+  await runJobInternal(job.id, id);
+
+  return NextResponse.json({ job_run_id: job.id });
 }
 
 async function runJobInternal(jobRunId: string, repoId: string): Promise<NextResponse> {
@@ -113,7 +106,15 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       .eq('owner_user_id', repo.owner_user_id)
       .single();
 
-    const installationId = org?.installation_id ?? parseInt(process.env.GITHUB_APP_INSTALLATION_ID ?? '0', 10);
+    let installationId = org?.installation_id;
+    if (!installationId) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('installation_id')
+        .eq('id', repo.owner_user_id)
+        .single();
+      installationId = profile?.installation_id ?? parseInt(process.env.GITHUB_APP_INSTALLATION_ID ?? '0', 10);
+    }
     const octokit = await getInstallationOctokit(installationId);
 
     await checkRepoSize(octokit, owner, repoName);
