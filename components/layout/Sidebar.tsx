@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, CreditCard, Home, GitBranch, ChevronRight } from 'lucide-react';
+import { BarChart3, CreditCard, Home, GitBranch, ChevronRight, Loader2, CheckCircle2, AlertTriangle, XCircle, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,11 +10,30 @@ const navItems = [
   { href: '/billing', label: 'Billing', icon: CreditCard },
 ];
 
-interface SidebarProps {
-  repos?: { id: string; full_name: string }[];
+function RepoStatusDot({ status }: { status?: string }) {
+  if (!status) return <Circle className="h-2.5 w-2.5 text-muted-foreground/40 shrink-0" />;
+
+  switch (status) {
+    case 'completed':
+      return <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />;
+    case 'running':
+    case 'pending':
+      return <Loader2 className="h-3 w-3 text-yellow-500 animate-spin shrink-0" />;
+    case 'failed':
+      return <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />;
+    case 'dead':
+      return <XCircle className="h-3 w-3 text-red-500 shrink-0" />;
+    default:
+      return <Circle className="h-2.5 w-2.5 text-muted-foreground/40 shrink-0" />;
+  }
 }
 
-export function Sidebar({ repos = [] }: SidebarProps) {
+interface SidebarProps {
+  repos?: { id: string; full_name: string }[];
+  jobStatusByRepo?: Record<string, string>;
+}
+
+export function Sidebar({ repos = [], jobStatusByRepo = {} }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -59,10 +78,12 @@ export function Sidebar({ repos = [] }: SidebarProps) {
             <nav className="flex flex-col gap-0.5">
               {repos.map(repo => {
                 const active = pathname.startsWith(`/repo/${repo.id}`);
+                const status = jobStatusByRepo[repo.id];
                 return (
                   <Link
                     key={repo.id}
                     href={`/repo/${repo.id}`}
+                    prefetch={false}
                     className={cn(
                       'group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                       active
@@ -70,7 +91,7 @@ export function Sidebar({ repos = [] }: SidebarProps) {
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                     )}
                   >
-                    <GitBranch className="h-3.5 w-3.5 shrink-0" />
+                    <RepoStatusDot status={status} />
                     <span className="flex-1 truncate">{repo.full_name.split('/')[1]}</span>
                     {active && <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />}
                   </Link>

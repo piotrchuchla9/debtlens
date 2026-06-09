@@ -25,9 +25,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
+  const { data: latestJobs } = await supabase
+    .from('job_runs')
+    .select('repo_id, status')
+    .in('repo_id', (repos ?? []).map(r => r.id))
+    .order('triggered_at', { ascending: false });
+
+  const jobStatusByRepo: Record<string, string> = {};
+  for (const job of latestJobs ?? []) {
+    if (!jobStatusByRepo[job.repo_id]) jobStatusByRepo[job.repo_id] = job.status;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar repos={repos ?? []} />
+      <Sidebar repos={repos ?? []} jobStatusByRepo={jobStatusByRepo} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar
           username={profile?.github_username}
