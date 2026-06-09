@@ -1,32 +1,30 @@
 import { Octokit } from '@octokit/rest';
 import { createAppAuth } from '@octokit/auth-app';
 
-export function getAppOctokit() {
-  const privateKey = Buffer.from(
-    process.env.GITHUB_APP_PRIVATE_KEY!,
-    'base64'
-  ).toString('utf-8');
+function resolvePrivateKey(): string {
+  const raw = process.env.GITHUB_APP_PRIVATE_KEY!;
+  // Already a PEM key
+  if (raw.trim().startsWith('-----')) return raw.trim();
+  // Base64-encoded PEM
+  return Buffer.from(raw.trim().replace(/%\s*$/, ''), 'base64').toString('utf-8');
+}
 
+export function getAppOctokit() {
   return new Octokit({
     authStrategy: createAppAuth,
     auth: {
       appId: process.env.GITHUB_APP_ID!,
-      privateKey,
+      privateKey: resolvePrivateKey(),
     },
   });
 }
 
 export async function getInstallationOctokit(installationId: number) {
-  const privateKey = Buffer.from(
-    process.env.GITHUB_APP_PRIVATE_KEY!,
-    'base64'
-  ).toString('utf-8');
-
   return new Octokit({
     authStrategy: createAppAuth,
     auth: {
       appId: process.env.GITHUB_APP_ID!,
-      privateKey,
+      privateKey: resolvePrivateKey(),
       installationId,
     },
   });
