@@ -58,7 +58,7 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
           <CardDescription>Configure which branch DebtLens scans</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label>Branch to scan</Label>
             <BranchCombobox
               repoId={repo.id}
