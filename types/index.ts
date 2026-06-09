@@ -25,6 +25,7 @@ export interface Repository {
   default_branch: string;
   is_active: boolean;
   knip_config_override: Record<string, unknown> | null;
+  scan_branch: string | null;
   created_at: string;
 }
 

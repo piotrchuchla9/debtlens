@@ -16,25 +16,30 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
+  const [scanBranch, setScanBranch] = useState(repo.scan_branch ?? '');
   const [threshold, setThreshold] = useState(String(alertConfig?.threshold_pct ?? 5));
   const [slackUrl, setSlackUrl] = useState(alertConfig?.slack_webhook_url ?? '');
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
 
-  async function saveAlertConfig() {
+  async function save() {
     setSaving(true);
     try {
-      const payload = {
+      await supabase
+        .from('repositories')
+        .update({ scan_branch: scanBranch.trim() || null })
+        .eq('id', repo.id);
+
+      const alertPayload = {
         repo_id: repo.id,
         threshold_pct: parseInt(threshold, 10),
         email_enabled: true,
         slack_webhook_url: isPro && slackUrl ? slackUrl : null,
       };
-
       if (alertConfig) {
-        await supabase.from('alert_configs').update(payload).eq('repo_id', repo.id);
+        await supabase.from('alert_configs').update(alertPayload).eq('repo_id', repo.id);
       } else {
-        await supabase.from('alert_configs').insert(payload);
+        await supabase.from('alert_configs').insert(alertPayload);
       }
       toast.success('Settings saved');
     } catch {
@@ -46,6 +51,28 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Scan Settings</CardTitle>
+          <CardDescription>Configure which branch DebtLens scans</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="branch">Branch to scan</Label>
+            <Input
+              id="branch"
+              placeholder={repo.default_branch}
+              value={scanBranch}
+              onChange={e => setScanBranch(e.target.value)}
+              className="w-64"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leave empty to use the default branch (<code className="rounded bg-muted px-1 py-0.5">{repo.default_branch}</code>).
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Alert Settings</CardTitle>
@@ -86,7 +113,7 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
             </div>
           )}
 
-          <Button onClick={saveAlertConfig} disabled={saving}>
+          <Button onClick={save} disabled={saving}>
             {saving ? 'Saving...' : 'Save settings'}
           </Button>
         </CardContent>

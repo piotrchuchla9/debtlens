@@ -89,7 +89,7 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
 
   if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
-  const repo = job.repositories as { full_name: string; knip_config_override: Record<string, unknown> | null; owner_user_id: string };
+  const repo = job.repositories as { full_name: string; knip_config_override: Record<string, unknown> | null; owner_user_id: string; scan_branch: string | null; default_branch: string };
   const [owner, repoName] = repo.full_name.split('/');
   const startedAt = new Date().toISOString();
 
@@ -119,7 +119,10 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
     const octokit = await getInstallationOctokit(installationId);
 
     await checkRepoSize(octokit, owner, repoName);
-    workDir = await downloadAndExtractRepo(octokit, owner, repoName, job.commit_sha === 'manual' ? 'HEAD' : job.commit_sha, jobRunId);
+    const ref = job.commit_sha === 'manual'
+      ? (repo.scan_branch ?? repo.default_branch ?? 'HEAD')
+      : job.commit_sha;
+    workDir = await downloadAndExtractRepo(octokit, owner, repoName, ref, jobRunId);
 
     const { output, version } = await runKnip(workDir, repo.knip_config_override);
     const parsed = parseKnipOutput(output);
