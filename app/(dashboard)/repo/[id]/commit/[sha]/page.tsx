@@ -31,7 +31,7 @@ export default async function CommitPage({ params }: PageProps) {
     .from('analysis_results')
     .select('*')
     .eq('repo_id', id)
-    .eq('commit_sha', sha)
+    .like('commit_sha', `${sha}%`)
     .order('created_at', { ascending: false })
     .limit(1)
     .single();
