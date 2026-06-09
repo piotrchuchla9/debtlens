@@ -2,6 +2,8 @@
 
 import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -20,21 +22,28 @@ export function Topbar({ username, plan }: TopbarProps) {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-card px-6">
       <div />
-      <div className="flex items-center gap-3">
-        {plan && (
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${plan === 'pro' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-            {plan === 'pro' ? 'Pro' : 'Free'}
-          </span>
+      <div className="flex items-center gap-2">
+        {plan === 'pro' && (
+          <Badge variant="default" className="h-5 px-2 text-[10px] font-semibold uppercase tracking-wide">
+            Pro
+          </Badge>
         )}
         {username && (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            {username}
-          </span>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <User className="h-3.5 w-3.5" />
+            <span>{username}</span>
+          </div>
         )}
-        <Button variant="ghost" size="sm" onClick={signOut}>
+        <ThemeToggle />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={signOut}
+          title="Sign out"
+        >
           <LogOut className="h-4 w-4" />
         </Button>
       </div>

@@ -26,15 +26,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .order('created_at', { ascending: false });
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar repos={repos ?? []} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar username={profile?.github_username} plan={profile?.plan} />
-        <main className="flex-1 overflow-auto p-6">
-          {children}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Topbar
+          username={profile?.github_username}
+          plan={profile?.plan as 'free' | 'pro' | undefined}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-6xl p-6">
+            {children}
+          </div>
         </main>
       </div>
-      <Toaster />
+      <Toaster richColors />
     </div>
   );
 }
