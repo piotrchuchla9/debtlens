@@ -6,7 +6,7 @@ import { runKnip } from '@/lib/analysis/runner';
 import { parseKnipOutput } from '@/lib/analysis/parser';
 import { checkAndSendAlert } from '@/lib/alerts/checker';
 
-const MANUAL_SCAN_COOLDOWN_MS = 10 * 60 * 1000;
+const MANUAL_SCAN_COOLDOWN_MS = 60 * 1000;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .from('job_runs')
     .select('triggered_at')
     .eq('repo_id', id)
+    .in('status', ['pending', 'running', 'completed'])
     .order('triggered_at', { ascending: false })
     .limit(1)
     .single();
