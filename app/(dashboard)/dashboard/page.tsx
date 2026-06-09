@@ -28,7 +28,7 @@ export default async function DashboardPage() {
       ?.sort((a: { triggered_at: string }, b: { triggered_at: string }) => new Date(b.triggered_at).getTime() - new Date(a.triggered_at).getTime())[0] ?? null,
   }));
 
-  const installUrl = `https://github.com/apps/debtlens/installations/new`;
+  const installUrl = `https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_SLUG ?? 'debtlens'}/installations/new`;
 
   return (
     <div className="space-y-6">
