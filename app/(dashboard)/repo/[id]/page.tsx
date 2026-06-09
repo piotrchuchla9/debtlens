@@ -84,7 +84,7 @@ export default async function RepoPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <ScanPoller isActive={isJobActive} />
+      <ScanPoller isActive={isJobActive} jobId={latestJob?.id ?? null} />
       <RepoHeader
         repo={repo}
         latestJob={latestJob}
