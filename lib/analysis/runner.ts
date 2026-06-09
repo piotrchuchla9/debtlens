@@ -1,7 +1,9 @@
 import { spawn } from 'child_process';
-import { writeFile, access, unlink } from 'fs/promises';
+import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { KnipOutput } from '@/types';
+
+const EMPTY_KNIP_OUTPUT: KnipOutput = { files: [], exports: [], types: [], dependencies: [], devDependencies: [] };
 
 const DEFAULT_KNIP_CONFIG = JSON.stringify({
   ignore: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**'],
@@ -9,72 +11,51 @@ const DEFAULT_KNIP_CONFIG = JSON.stringify({
   ignoreExportsUsedInFile: true,
 }, null, 2);
 
+const SPAWN_ENV: NodeJS.ProcessEnv = {
+  ...process.env,
+  HOME: '/tmp',
+  npm_config_cache: '/tmp/.npm',
+};
+
 export async function runKnip(
   workDir: string,
   configOverride?: Record<string, unknown> | null
 ): Promise<{ output: KnipOutput; version: string }> {
-  // Remove any existing knip config that might require TypeScript to load
-  const existingConfigs = [
-    'knip.ts', 'knip.js', 'knip.config.ts', 'knip.config.js',
-    '.knip.ts', '.knip.js', '.knip.config.ts',
-  ];
-  await Promise.all(existingConfigs.map(f => unlink(join(workDir, f)).catch(() => {})));
+  // Remove TS/JS knip configs that require a loader — we'll use knip.json
+  const tsConfigs = ['knip.ts', 'knip.js', 'knip.config.ts', 'knip.config.js', '.knip.ts', '.knip.js'];
+  await Promise.all(tsConfigs.map(f => unlink(join(workDir, f)).catch(() => {})));
 
-  const configPath = join(workDir, 'knip.json');
-  const configContent = configOverride
-    ? JSON.stringify(configOverride, null, 2)
-    : DEFAULT_KNIP_CONFIG;
-  await writeFile(configPath, configContent, 'utf-8');
+  const configContent = configOverride ? JSON.stringify(configOverride, null, 2) : DEFAULT_KNIP_CONFIG;
+  await writeFile(join(workDir, 'knip.json'), configContent, 'utf-8');
 
-  const output = await new Promise<string>((resolve, reject) => {
+  const stdout = await runProcess(
+    'npx', ['knip@5', '--config', 'knip.json', '--reporter', 'json', '--no-exit-code'],
+    workDir
+  );
+
+  const jsonStart = stdout.search(/[[{]/);
+  const output: KnipOutput = jsonStart !== -1
+    ? JSON.parse(stdout.slice(jsonStart))
+    : EMPTY_KNIP_OUTPUT;
+
+  const version = await runProcess('npx', ['knip@5', '--version'], workDir)
+    .then(v => v.trim())
+    .catch(() => '5.x');
+
+  return { output, version };
+}
+
+function runProcess(cmd: string, args: string[], cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
-
-    const proc = spawn(
-      'npx',
-      ['knip@5', '--config', configPath, '--reporter', 'json', '--no-exit-code'],
-      {
-        cwd: workDir,
-        env: {
-          ...process.env,
-          NODE_ENV: 'production',
-          HOME: '/tmp',
-          npm_config_cache: '/tmp/.npm',
-        },
-      }
-    );
-
-    proc.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
-    proc.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
-
+    const proc = spawn(cmd, args, { cwd, env: SPAWN_ENV });
+    proc.stdout.on('data', (c: Buffer) => (stdout += c.toString()));
+    proc.stderr.on('data', (c: Buffer) => (stderr += c.toString()));
     proc.on('close', (code) => {
-      if (stdout.trim()) {
-        resolve(stdout);
-      } else {
-        reject(new Error(`Knip produced no output. Exit code: ${code}. Stderr: ${stderr.slice(0, 500)}`));
-      }
+      if (stdout.trim()) resolve(stdout);
+      else reject(new Error(`Exit ${code}. Stderr: ${stderr.slice(0, 400)}`));
     });
-
     proc.on('error', reject);
   });
-
-  // Knip may print warnings/errors before the JSON — find the first [ or {
-  const jsonStart = output.search(/[[{]/);
-  if (jsonStart === -1) {
-    throw new Error(`Knip output contains no JSON. Output: ${output.slice(0, 300)}`);
-  }
-  const parsed: KnipOutput = JSON.parse(output.slice(jsonStart));
-
-  const versionOutput = await new Promise<string>((resolve) => {
-    let out = '';
-    const proc = spawn('npx', ['knip@5', '--version'], {
-      cwd: workDir,
-      env: { ...process.env, HOME: '/tmp', npm_config_cache: '/tmp/.npm' },
-    });
-    proc.stdout.on('data', (c: Buffer) => (out += c.toString()));
-    proc.on('close', () => resolve(out.trim()));
-    proc.on('error', () => resolve('5.x'));
-  });
-
-  return { output: parsed, version: versionOutput };
 }
