@@ -11,3 +11,11 @@ export class UnusedClass {
     return 'hello';
   }
 }
+
+export function alertTestFunction1(): string {
+  return 'alert test 1';
+}
+
+export function alertTestFunction2(x: number): number {
+  return x + 1;
+}
