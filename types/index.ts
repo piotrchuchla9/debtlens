@@ -73,6 +73,7 @@ export interface ExportEntry {
   name: string;
   file: string;
   type: string;
+  line?: number;
 }
 
 export interface AlertConfig {
@@ -112,6 +113,7 @@ export interface ExportBreakdown {
   name: string;
   file: string;
   type: string;
+  line?: number;
 }
 
 export interface KnipIssueItem {

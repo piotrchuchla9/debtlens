@@ -123,6 +123,9 @@ export default async function RepoPage({ params }: PageProps) {
               files={files}
               exports={(breakdown?.unused_exports_list ?? []) as ExportBreakdown[]}
               deps={(breakdown?.unused_deps_list ?? []) as string[]}
+              repoFullName={repo.full_name}
+              commitSha={latestJob?.commit_sha}
+              defaultBranch={repo.scan_branch ?? repo.default_branch}
             />
           </CardContent>
         </Card>

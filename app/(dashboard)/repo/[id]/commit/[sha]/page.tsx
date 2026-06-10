@@ -108,6 +108,9 @@ export default async function CommitPage({ params }: PageProps) {
             files={files}
             exports={(result.unused_exports_list ?? []) as ExportBreakdown[]}
             deps={(result.unused_deps_list ?? []) as string[]}
+            repoFullName={repo.full_name}
+            commitSha={sha}
+            defaultBranch={sha}
           />
         </CardContent>
       </Card>

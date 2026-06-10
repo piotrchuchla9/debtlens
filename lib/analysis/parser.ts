@@ -16,10 +16,10 @@ export function parseKnipOutput(output: KnipOutput): ParsedAnalysis {
 
   for (const fileIssues of output.issues ?? []) {
     for (const exp of fileIssues.exports ?? []) {
-      allExports.push({ name: exp.name, file: fileIssues.file, type: 'export' });
+      allExports.push({ name: exp.name, file: fileIssues.file, type: 'export', line: exp.line });
     }
     for (const t of fileIssues.types ?? []) {
-      allExports.push({ name: t.name, file: fileIssues.file, type: 'type' });
+      allExports.push({ name: t.name, file: fileIssues.file, type: 'type', line: t.line });
     }
     for (const dep of fileIssues.dependencies ?? []) {
       allDeps.push(dep.name);
