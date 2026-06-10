@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrendPoint } from '@/types';
-import { cn, deltaColor, deltaLabel, formatDate } from '@/lib/utils';
+import { cn, deltaColor, deltaLabel, formatDateTime } from '@/lib/utils';
 
 interface CommitTableProps {
   trend: TrendPoint[];
@@ -31,7 +31,7 @@ export function CommitTable({ trend, repoId }: CommitTableProps) {
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
               <Link href={`/repo/${repoId}/commit/${point.sha}`} className="block">
-                {formatDate(point.date)}
+                {formatDateTime(point.date)}
               </Link>
             </TableCell>
             <TableCell className="text-right font-medium tabular-nums">
