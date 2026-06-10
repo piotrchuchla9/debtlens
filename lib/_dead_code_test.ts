@@ -2,6 +2,8 @@
 
 export function neverCalledHelper(input: string): string {
   return input.toUpperCase();
+
+  
 }
 
 export const UNUSED_CONSTANT = 42;
