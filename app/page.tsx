@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
-  BarChart3, Bell, TrendingDown, Check,
+  BarChart3, GitBranch, Bell, TrendingDown, Check,
   ArrowRight, Zap, Shield, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
