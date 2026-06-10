@@ -13,6 +13,13 @@ export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
 }
 
+export function formatDateTime(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(new Date(iso));
+}
+
 export function shortSha(sha: string): string {
   return sha.slice(0, 7);
 }
