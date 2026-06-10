@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { SettingsForm } from '@/components/dashboard/SettingsForm';
+import { DeleteRepoButton } from '@/components/dashboard/DeleteRepoButton';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -53,6 +55,16 @@ export default async function RepoSettingsPage({ params }: PageProps) {
         alertConfig={alertConfig}
         isPro={profile?.plan === 'pro'}
       />
+
+      <Separator />
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
+        <p className="text-xs text-muted-foreground">
+          Removes this repository and all associated scan history from DebtLens. The GitHub repository itself is not affected.
+        </p>
+        <DeleteRepoButton repoId={id} repoName={repo.full_name} />
+      </div>
     </div>
   );
 }
