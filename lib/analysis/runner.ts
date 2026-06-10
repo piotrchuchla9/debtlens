@@ -122,7 +122,7 @@ export async function runKnip(
   const jsonStart = stdout.search(/[[{]/);
   const output: KnipOutput = jsonStart !== -1
     ? JSON.parse(stdout.slice(jsonStart))
-    : EMPTY_KNIP_OUTPUT;
+    : { files: [], issues: [] } as KnipOutput;
 
   const version = await runProcess('npx', ['knip@5', '--version'], workDir)
     .then(v => v.trim())
