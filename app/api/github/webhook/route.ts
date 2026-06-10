@@ -179,12 +179,24 @@ async function handlePullRequest(supabase: Awaited<ReturnType<typeof createServi
 
   if (!repo) return;
 
-  await supabase.from('job_runs').insert({
+  const { data: job } = await supabase.from('job_runs').insert({
     repo_id: repo.id,
     commit_sha: head.sha as string,
     commit_message: `PR #${pr.number as number}: ${pr.title as string}`.slice(0, 120),
     branch: (head.ref as string),
     pr_number: pr.number as number,
     status: 'pending',
-  });
+  }).select().single();
+
+  if (job) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    waitUntil(fetch(`${appUrl}/api/repos/${repo.id}/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.INTERNAL_JOB_SECRET ?? '',
+      },
+      body: JSON.stringify({ job_run_id: job.id }),
+    }).catch(() => {}));
+  }
 }

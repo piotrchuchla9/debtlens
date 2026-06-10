@@ -6,6 +6,7 @@ import { runAnalysis } from '@/lib/analysis/runner';
 import { parseKnipOutput } from '@/lib/analysis/parser';
 import { checkAndSendAlert } from '@/lib/alerts/checker';
 import { PLANS } from '@/lib/stripe/plans';
+import { postCommitStatus, postPRComment, postPendingStatus } from '@/lib/github/pr';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -125,6 +126,13 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       installationId = profile?.installation_id ?? parseInt(process.env.GITHUB_APP_INSTALLATION_ID ?? '0', 10);
     }
     const octokit = await getInstallationOctokit(installationId);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.debtlens.live';
+    const dashboardUrl = `${appUrl}/repo/${repoId}`;
+
+    // Post pending status immediately so PR shows "checks in progress"
+    if (job.pr_number && job.commit_sha !== 'manual') {
+      await postPendingStatus(octokit, owner, repoName, job.commit_sha, dashboardUrl).catch(() => {});
+    }
 
     await checkRepoSize(octokit, owner, repoName);
     const ref = job.commit_sha === 'manual'
@@ -160,7 +168,49 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       .update({ status: 'completed', completed_at: completedAt, duration_ms: durationMs })
       .eq('id', jobRunId);
 
-    await checkAndSendAlert(repoId, total_dead_code, prevResult?.total_dead_code ?? null);
+    if (job.pr_number && job.commit_sha !== 'manual') {
+      // Get base branch analysis for comparison
+      const { data: baseJob } = await supabase
+        .from('job_runs')
+        .select('id')
+        .eq('repo_id', repoId)
+        .eq('status', 'completed')
+        .is('pr_number', null)
+        .order('triggered_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      let baseAnalysis: { total: number; files: number; exports: number; deps: number } | null = null;
+      if (baseJob) {
+        const { data: baseResult } = await supabase
+          .from('analysis_results')
+          .select('total_dead_code, unused_files_count, unused_exports_count, unused_deps_count')
+          .eq('job_run_id', baseJob.id)
+          .single();
+        if (baseResult) {
+          baseAnalysis = {
+            total: baseResult.total_dead_code,
+            files: baseResult.unused_files_count,
+            exports: baseResult.unused_exports_count,
+            deps: baseResult.unused_deps_count,
+          };
+        }
+      }
+
+      const current = {
+        total: total_dead_code,
+        files: parsed.unused_files_count,
+        exports: parsed.unused_exports_count,
+        deps: parsed.unused_deps_count,
+      };
+
+      await Promise.allSettled([
+        postCommitStatus(octokit, owner, repoName, job.commit_sha, current, baseAnalysis, dashboardUrl),
+        postPRComment(octokit, owner, repoName, job.pr_number, current, baseAnalysis, dashboardUrl),
+      ]);
+    } else {
+      await checkAndSendAlert(repoId, total_dead_code, prevResult?.total_dead_code ?? null);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
