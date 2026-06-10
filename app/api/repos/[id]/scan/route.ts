@@ -135,11 +135,12 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       .limit(1)
       .single();
 
+    const { total_dead_code, ...insertParsed } = parsed;
     await supabase.from('analysis_results').insert({
       job_run_id: jobRunId,
       repo_id: repoId,
       commit_sha: job.commit_sha,
-      ...parsed,
+      ...insertParsed,
       knip_version: version,
     });
 
@@ -151,7 +152,7 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       .update({ status: 'completed', completed_at: completedAt, duration_ms: durationMs })
       .eq('id', jobRunId);
 
-    await checkAndSendAlert(repoId, parsed.total_dead_code, prevResult?.total_dead_code ?? null);
+    await checkAndSendAlert(repoId, total_dead_code, prevResult?.total_dead_code ?? null);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
