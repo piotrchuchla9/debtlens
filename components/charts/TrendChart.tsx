@@ -67,8 +67,8 @@ export function TrendChart({ data, isPro, onPointClick }: TrendChartProps) {
           <Legend />
           <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} dot={false} name="Total" />
           <Line type="monotone" dataKey="files" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Files" />
+          <Line type="monotone" dataKey="deps" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="4 3" name="Deps" />
           <Line type="monotone" dataKey="exports" stroke="#10b981" strokeWidth={1.5} dot={false} name="Exports" />
-          <Line type="monotone" dataKey="deps" stroke="#ef4444" strokeWidth={1.5} dot={false} name="Deps" />
         </LineChart>
       </ResponsiveContainer>
     </div>
