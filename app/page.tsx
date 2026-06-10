@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
   BarChart3, GitBranch, Bell, TrendingDown, Check,
-  ArrowRight, Zap, Shield, Clock
+  ArrowRight, Zap, Shield, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -152,25 +152,25 @@ export default async function LandingPage() {
               {
                 icon: TrendingDown,
                 title: 'Historical Trends',
-                desc: 'Line charts showing dead code per commit — unused files, exports, and dependencies tracked over time.',
+                desc: 'Line charts per commit — unused files, exports, and dependencies tracked over time so you can see if debt is growing or shrinking.',
                 color: 'text-blue-500 bg-blue-500/10',
               },
               {
                 icon: Zap,
                 title: 'Zero Config',
-                desc: 'Install the GitHub App and DebtLens automatically analyses every push to your default branch. No YAML.',
+                desc: 'Install the GitHub App and DebtLens automatically scans every push to your default branch. No CI YAML to write.',
                 color: 'text-yellow-500 bg-yellow-500/10',
               },
               {
                 icon: Bell,
-                title: 'Spike Alerts',
-                desc: 'Get notified by email when dead code increases by more than 5% in a single push. Configurable threshold.',
+                title: 'Slack Alerts',
+                desc: 'Get a Slack notification when dead code spikes by more than your configured threshold in a single push.',
                 color: 'text-red-500 bg-red-500/10',
               },
               {
                 icon: GitBranch,
-                title: 'PR Diff Comments',
-                desc: 'DebtLens comments directly on pull requests showing how much debt the PR adds or removes.',
+                title: 'Multi-language',
+                desc: 'Supports JavaScript, TypeScript, Python, and Go out of the box. Powered by Knip v5 for JS/TS and native parsers for other languages.',
                 color: 'text-violet-500 bg-violet-500/10',
               },
               {
@@ -180,9 +180,9 @@ export default async function LandingPage() {
                 color: 'text-green-500 bg-green-500/10',
               },
               {
-                icon: Clock,
-                title: 'Manager-Ready Reports',
-                desc: 'Export a one-page PDF with trend charts and top offenders — perfect for quarterly reviews.',
+                icon: Users,
+                title: 'Team Access',
+                desc: 'Install on a GitHub Organization and every team member automatically sees shared repositories — no manual invite needed.',
                 color: 'text-orange-500 bg-orange-500/10',
               },
             ].map(({ icon: Icon, title, desc, color }) => (
@@ -215,7 +215,7 @@ export default async function LandingPage() {
                 <span className="text-muted-foreground">/month</span>
               </div>
               <ul className="mb-8 space-y-3 text-sm">
-                {['1 repository', '90-day history', 'Email alerts', 'README badge', 'Manual scans'].map(f => (
+                {['1 repository', '90-day history', 'README badge', 'Manual scans', 'JS / TS / Python / Go'].map(f => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 shrink-0 text-green-500" />
                     {f}
@@ -234,17 +234,16 @@ export default async function LandingPage() {
               </div>
               <div className="mb-1 text-sm font-medium text-muted-foreground">Pro</div>
               <div className="mb-6 flex items-baseline gap-1">
-                <span className="text-4xl font-bold">$15</span>
-                <span className="text-muted-foreground">/repo/month</span>
+                <span className="text-4xl font-bold">$35</span>
+                <span className="text-muted-foreground">/month</span>
               </div>
               <ul className="mb-8 space-y-3 text-sm">
                 {[
                   'Unlimited repositories',
                   'Full history',
-                  'Email + Slack alerts',
-                  'PDF report export',
+                  'Slack spike alerts',
                   'Knip config override',
-                  'PR diff comments',
+                  'Team & org access',
                   'Priority support',
                 ].map(f => (
                   <li key={f} className="flex items-center gap-2.5">
