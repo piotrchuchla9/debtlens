@@ -114,12 +114,27 @@ export interface ExportBreakdown {
   type: string;
 }
 
+export interface KnipIssueItem {
+  name: string;
+  line?: number;
+  col?: number;
+}
+
+export interface KnipFileIssues {
+  file: string;
+  dependencies?: KnipIssueItem[];
+  devDependencies?: KnipIssueItem[];
+  optionalPeerDependencies?: KnipIssueItem[];
+  exports?: KnipIssueItem[];
+  types?: KnipIssueItem[];
+  unlisted?: KnipIssueItem[];
+  unresolved?: KnipIssueItem[];
+  binaries?: KnipIssueItem[];
+}
+
 export interface KnipOutput {
   files: string[];
-  exports: { name: string; file: string; type: string }[];
-  types: { name: string; file: string }[];
-  dependencies: { name: string; package: string }[];
-  devDependencies: { name: string; package: string }[];
+  issues: KnipFileIssues[];
 }
 
 export interface RepositoryWithLatestAnalysis extends Repository {

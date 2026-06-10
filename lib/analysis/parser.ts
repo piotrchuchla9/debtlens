@@ -11,15 +11,23 @@ export interface ParsedAnalysis {
 }
 
 export function parseKnipOutput(output: KnipOutput): ParsedAnalysis {
-  const allExports: ExportEntry[] = [
-    ...(output.exports ?? []).map(e => ({ name: e.name, file: e.file, type: e.type })),
-    ...(output.types ?? []).map(t => ({ name: t.name, file: t.file, type: 'type' })),
-  ];
+  const allExports: ExportEntry[] = [];
+  const allDeps: string[] = [];
 
-  const allDeps = [
-    ...(output.dependencies ?? []).map(d => d.package ?? d.name),
-    ...(output.devDependencies ?? []).map(d => d.package ?? d.name),
-  ];
+  for (const fileIssues of output.issues ?? []) {
+    for (const exp of fileIssues.exports ?? []) {
+      allExports.push({ name: exp.name, file: fileIssues.file, type: 'export' });
+    }
+    for (const t of fileIssues.types ?? []) {
+      allExports.push({ name: t.name, file: fileIssues.file, type: 'type' });
+    }
+    for (const dep of fileIssues.dependencies ?? []) {
+      allDeps.push(dep.name);
+    }
+    for (const dep of fileIssues.devDependencies ?? []) {
+      allDeps.push(dep.name);
+    }
+  }
 
   const fileExportCounts = allExports.reduce<Record<string, number>>((acc, e) => {
     acc[e.file] = (acc[e.file] ?? 0) + 1;
@@ -31,15 +39,11 @@ export function parseKnipOutput(output: KnipOutput): ParsedAnalysis {
     exportCount: fileExportCounts[file] ?? 0,
   }));
 
-  const unusedFilesCount = unusedFilesList.length;
-  const unusedExportsCount = allExports.length;
-  const unusedDepsCount = allDeps.length;
-
   return {
-    unused_files_count: unusedFilesCount,
-    unused_exports_count: unusedExportsCount,
-    unused_deps_count: unusedDepsCount,
-    total_dead_code: unusedFilesCount + unusedExportsCount + unusedDepsCount,
+    unused_files_count: unusedFilesList.length,
+    unused_exports_count: allExports.length,
+    unused_deps_count: allDeps.length,
+    total_dead_code: unusedFilesList.length + allExports.length + allDeps.length,
     unused_files_list: unusedFilesList,
     unused_exports_list: allExports,
     unused_deps_list: allDeps,

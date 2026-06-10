@@ -35,3 +35,8 @@ export function healthColor(total: number): string {
   if (total < 200) return 'text-yellow-500';
   return 'text-red-500';
 }
+
+// TEST — unused export, should be detected by scanner
+export function neverUsedUtility(x: number, y: number): number {
+  return x * y + Math.random();
+}

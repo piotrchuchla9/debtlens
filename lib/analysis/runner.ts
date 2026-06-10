@@ -6,10 +6,10 @@ import { detectLanguages } from './detect';
 import { analyzePython } from './python';
 import { analyzeGo } from './golang';
 
-const EMPTY_KNIP_OUTPUT: KnipOutput = { files: [], exports: [], types: [], dependencies: [], devDependencies: [] };
+const EMPTY_KNIP_OUTPUT: KnipOutput = { files: [], issues: [] };
 
 const DEFAULT_KNIP_CONFIG = JSON.stringify({
-  ignore: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**'],
+  ignore: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**', 'supabase/functions/**', 'supabase/migrations/**'],
   ignoreDependencies: ['typescript', 'eslint', 'prettier'],
   ignoreExportsUsedInFile: true,
 }, null, 2);
@@ -45,14 +45,21 @@ export async function runAnalysis(
     languages.push('python');
     tasks.push(
       analyzePython(workDir).then(result => {
-        merged.dependencies = [
-          ...merged.dependencies,
-          ...result.unusedDeps.map(name => ({ name, package: name })),
-        ];
-        merged.exports = [
-          ...merged.exports,
-          ...result.unusedExports.map(e => ({ name: e.name, file: e.file, type: e.type })),
-        ];
+        if (result.unusedDeps.length > 0 || result.unusedExports.length > 0) {
+          const fileIssues: Record<string, { exports: {name:string}[], dependencies: {name:string}[] }> = {};
+          for (const dep of result.unusedDeps) {
+            const key = 'requirements.txt';
+            fileIssues[key] = fileIssues[key] ?? { exports: [], dependencies: [] };
+            fileIssues[key].dependencies.push({ name: dep });
+          }
+          for (const exp of result.unusedExports) {
+            fileIssues[exp.file] = fileIssues[exp.file] ?? { exports: [], dependencies: [] };
+            fileIssues[exp.file].exports.push({ name: exp.name });
+          }
+          for (const [file, issues] of Object.entries(fileIssues)) {
+            merged.issues.push({ file, ...issues });
+          }
+        }
         merged.files = [...merged.files, ...result.unusedFiles];
       }).catch(() => {})
     );
@@ -62,14 +69,21 @@ export async function runAnalysis(
     languages.push('go');
     tasks.push(
       analyzeGo(workDir).then(result => {
-        merged.dependencies = [
-          ...merged.dependencies,
-          ...result.unusedDeps.map(name => ({ name, package: name })),
-        ];
-        merged.exports = [
-          ...merged.exports,
-          ...result.unusedExports.map(e => ({ name: e.name, file: e.file, type: e.type })),
-        ];
+        if (result.unusedDeps.length > 0 || result.unusedExports.length > 0) {
+          const fileIssues: Record<string, { exports: {name:string}[], dependencies: {name:string}[] }> = {};
+          for (const dep of result.unusedDeps) {
+            const key = 'go.mod';
+            fileIssues[key] = fileIssues[key] ?? { exports: [], dependencies: [] };
+            fileIssues[key].dependencies.push({ name: dep });
+          }
+          for (const exp of result.unusedExports) {
+            fileIssues[exp.file] = fileIssues[exp.file] ?? { exports: [], dependencies: [] };
+            fileIssues[exp.file].exports.push({ name: exp.name });
+          }
+          for (const [file, issues] of Object.entries(fileIssues)) {
+            merged.issues.push({ file, ...issues });
+          }
+        }
         merged.files = [...merged.files, ...result.unusedFiles];
       }).catch(() => {})
     );
@@ -121,10 +135,7 @@ export async function runKnip(
 function mergeKnip(a: KnipOutput, b: KnipOutput): KnipOutput {
   return {
     files: [...(a.files ?? []), ...(b.files ?? [])],
-    exports: [...(a.exports ?? []), ...(b.exports ?? [])],
-    types: [...(a.types ?? []), ...(b.types ?? [])],
-    dependencies: [...(a.dependencies ?? []), ...(b.dependencies ?? [])],
-    devDependencies: [...(a.devDependencies ?? []), ...(b.devDependencies ?? [])],
+    issues: [...(a.issues ?? []), ...(b.issues ?? [])],
   };
 }
 
