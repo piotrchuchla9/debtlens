@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { downloadAndExtractRepo, cleanupWorkDir, checkRepoSize } from '@/lib/github/download';
 import { getInstallationOctokit } from '@/lib/github/app';
-import { runKnip } from '@/lib/analysis/runner';
+import { runAnalysis } from '@/lib/analysis/runner';
 import { parseKnipOutput } from '@/lib/analysis/parser';
 import { checkAndSendAlert } from '@/lib/alerts/checker';
 
@@ -124,7 +124,7 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       : job.commit_sha;
     workDir = await downloadAndExtractRepo(octokit, owner, repoName, ref, jobRunId);
 
-    const { output, version } = await runKnip(workDir, repo.knip_config_override);
+    const { output, version } = await runAnalysis(workDir, repo.knip_config_override);
     const parsed = parseKnipOutput(output);
 
     const { data: prevResult } = await supabase

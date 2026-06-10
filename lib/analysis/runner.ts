@@ -2,6 +2,9 @@ import { spawn } from 'child_process';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { KnipOutput } from '@/types';
+import { detectLanguages } from './detect';
+import { analyzePython } from './python';
+import { analyzeGo } from './golang';
 
 const EMPTY_KNIP_OUTPUT: KnipOutput = { files: [], exports: [], types: [], dependencies: [], devDependencies: [] };
 
@@ -17,11 +20,81 @@ const SPAWN_ENV: NodeJS.ProcessEnv = {
   npm_config_cache: '/tmp/.npm',
 };
 
+export async function runAnalysis(
+  workDir: string,
+  configOverride?: Record<string, unknown> | null
+): Promise<{ output: KnipOutput; version: string; languages: string[] }> {
+  const langs = await detectLanguages(workDir);
+  const languages: string[] = [];
+  let merged: KnipOutput = { ...EMPTY_KNIP_OUTPUT };
+  let version = 'multi';
+
+  const tasks: Promise<void>[] = [];
+
+  if (langs.js) {
+    languages.push('js');
+    tasks.push(
+      runKnip(workDir, configOverride).then(({ output, version: v }) => {
+        version = v;
+        merged = mergeKnip(merged, output);
+      }).catch(() => {})
+    );
+  }
+
+  if (langs.python) {
+    languages.push('python');
+    tasks.push(
+      analyzePython(workDir).then(result => {
+        merged.dependencies = [
+          ...merged.dependencies,
+          ...result.unusedDeps.map(name => ({ name, package: name })),
+        ];
+        merged.exports = [
+          ...merged.exports,
+          ...result.unusedExports.map(e => ({ name: e.name, file: e.file, type: e.type })),
+        ];
+        merged.files = [...merged.files, ...result.unusedFiles];
+      }).catch(() => {})
+    );
+  }
+
+  if (langs.go) {
+    languages.push('go');
+    tasks.push(
+      analyzeGo(workDir).then(result => {
+        merged.dependencies = [
+          ...merged.dependencies,
+          ...result.unusedDeps.map(name => ({ name, package: name })),
+        ];
+        merged.exports = [
+          ...merged.exports,
+          ...result.unusedExports.map(e => ({ name: e.name, file: e.file, type: e.type })),
+        ];
+        merged.files = [...merged.files, ...result.unusedFiles];
+      }).catch(() => {})
+    );
+  }
+
+  // Fallback: treat as JS if nothing detected
+  if (languages.length === 0) {
+    languages.push('js');
+    const { output, version: v } = await runKnip(workDir, configOverride).catch(() => ({ output: EMPTY_KNIP_OUTPUT, version: '5.x' }));
+    merged = output;
+    version = v;
+  } else {
+    await Promise.all(tasks);
+  }
+
+  if (languages.length > 1) version = `multi (${languages.join('+')})`;
+
+  return { output: merged, version, languages };
+}
+
+// Keep runKnip exported for backwards compat
 export async function runKnip(
   workDir: string,
   configOverride?: Record<string, unknown> | null
 ): Promise<{ output: KnipOutput; version: string }> {
-  // Remove TS/JS knip configs that require a loader — we'll use knip.json
   const tsConfigs = ['knip.ts', 'knip.js', 'knip.config.ts', 'knip.config.js', '.knip.ts', '.knip.js'];
   await Promise.all(tsConfigs.map(f => unlink(join(workDir, f)).catch(() => {})));
 
@@ -43,6 +116,16 @@ export async function runKnip(
     .catch(() => '5.x');
 
   return { output, version };
+}
+
+function mergeKnip(a: KnipOutput, b: KnipOutput): KnipOutput {
+  return {
+    files: [...(a.files ?? []), ...(b.files ?? [])],
+    exports: [...(a.exports ?? []), ...(b.exports ?? [])],
+    types: [...(a.types ?? []), ...(b.types ?? [])],
+    dependencies: [...(a.dependencies ?? []), ...(b.dependencies ?? [])],
+    devDependencies: [...(a.devDependencies ?? []), ...(b.devDependencies ?? [])],
+  };
 }
 
 function runProcess(cmd: string, args: string[], cwd: string): Promise<string> {
