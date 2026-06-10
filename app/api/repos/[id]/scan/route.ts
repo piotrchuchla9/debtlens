@@ -135,12 +135,11 @@ async function runJobInternal(jobRunId: string, repoId: string): Promise<NextRes
       .limit(1)
       .single();
 
-    const { total_dead_code: _generated, ...insertParsed } = parsed;
     await supabase.from('analysis_results').insert({
       job_run_id: jobRunId,
       repo_id: repoId,
       commit_sha: job.commit_sha,
-      ...insertParsed,
+      ...parsed,
       knip_version: version,
     });
 

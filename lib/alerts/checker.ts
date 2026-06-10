@@ -18,7 +18,7 @@ export async function checkAndSendAlert(
     .eq('repo_id', repoId)
     .single();
 
-  if (!config?.slack_webhook_url || changePct <= config.threshold_pct) return;
+  if (!config?.slack_webhook_url || changePct < config.threshold_pct) return;
 
   const { data: repo } = await supabase
     .from('repositories')
