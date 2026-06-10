@@ -75,10 +75,7 @@ export default function LoginPage() {
           </Button>
 
           <div className="mt-4 text-center text-xs text-muted-foreground">
-            By signing in, you agree to our{' '}
-            <Link href="/docs" className="underline underline-offset-4 hover:text-foreground transition-colors">Terms</Link>
-            {' '}and{' '}
-            <Link href="/docs" className="underline underline-offset-4 hover:text-foreground transition-colors">Privacy Policy</Link>
+            By signing in, you agree to our Terms and Privacy Policy.
           </div>
         </div>
 

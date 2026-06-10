@@ -29,7 +29,6 @@ export default async function LandingPage() {
           <nav className="hidden items-center gap-6 text-sm md:flex">
             <Link href="#features" className="text-muted-foreground transition-colors hover:text-foreground">Features</Link>
             <Link href="#pricing" className="text-muted-foreground transition-colors hover:text-foreground">Pricing</Link>
-            <Link href="/docs" className="text-muted-foreground transition-colors hover:text-foreground">Docs</Link>
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -206,15 +205,15 @@ export default async function LandingPage() {
             <p className="mt-3 text-muted-foreground">Start free. Upgrade when you need more.</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
             {/* Free */}
-            <div className="rounded-xl border border-border/60 bg-card p-8">
+            <div className="flex flex-col rounded-xl border border-border/60 bg-card p-8">
               <div className="mb-1 text-sm font-medium text-muted-foreground">Free</div>
               <div className="mb-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold">$0</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
-              <ul className="mb-8 space-y-3 text-sm">
+              <ul className="mb-8 space-y-3 text-sm flex-1">
                 {['1 repository', '90-day history', 'README badge', 'Manual scans', 'JS / TS / Python / Go'].map(f => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 shrink-0 text-green-500" />
@@ -222,13 +221,13 @@ export default async function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Button asChild variant="outline" className="w-full" size="lg">
+              <Button asChild variant="outline" className="w-full mt-auto" size="lg">
                 <Link href="/login">Get started free</Link>
               </Button>
             </div>
 
             {/* Pro */}
-            <div className="relative rounded-xl border-2 border-primary bg-card p-8 shadow-lg shadow-primary/5">
+            <div className="relative flex flex-col rounded-xl border-2 border-primary bg-card p-8 shadow-lg shadow-primary/5">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge className="px-3 text-xs shadow-sm">Most popular</Badge>
               </div>
@@ -237,7 +236,7 @@ export default async function LandingPage() {
                 <span className="text-4xl font-bold">$35</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
-              <ul className="mb-8 space-y-3 text-sm">
+              <ul className="mb-8 space-y-3 text-sm flex-1">
                 {[
                   'Unlimited repositories',
                   'Full history',
@@ -252,7 +251,7 @@ export default async function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Button asChild className="w-full" size="lg">
+              <Button asChild className="w-full mt-auto" size="lg">
                 <Link href="/login">Start with Pro</Link>
               </Button>
             </div>
@@ -261,7 +260,7 @@ export default async function LandingPage() {
       </section>
 
       <footer className="border-t border-border/40 px-6 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="flex h-5 w-5 items-center justify-center rounded bg-primary">
               <BarChart3 className="h-3 w-3 text-primary-foreground" />
@@ -269,10 +268,6 @@ export default async function LandingPage() {
             <span className="font-medium text-foreground">DebtLens</span>
           </div>
           <p>© {new Date().getFullYear()} DebtLens · Built for teams who care about code quality</p>
-          <div className="flex gap-4">
-            <Link href="/docs" className="hover:text-foreground transition-colors">Docs</Link>
-            <Link href="#pricing" className="hover:text-foreground transition-colors">Pricing</Link>
-          </div>
         </div>
       </footer>
     </div>
