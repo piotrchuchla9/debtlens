@@ -22,11 +22,20 @@ export async function checkAndSendAlert(
 
   const { data: repo } = await supabase
     .from('repositories')
-    .select('full_name')
+    .select('full_name, owner_user_id')
     .eq('id', repoId)
     .single();
 
   if (!repo) return;
+
+  // Slack alerts are a Pro feature
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('plan')
+    .eq('id', repo.owner_user_id)
+    .single();
+
+  if (profile?.plan !== 'pro') return;
 
   const diff = currentTotal - previousTotal;
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/repo/${repoId}`;

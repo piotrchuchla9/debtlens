@@ -5,8 +5,7 @@ import { getInstallationOctokit } from '@/lib/github/app';
 import { runAnalysis } from '@/lib/analysis/runner';
 import { parseKnipOutput } from '@/lib/analysis/parser';
 import { checkAndSendAlert } from '@/lib/alerts/checker';
-
-const MANUAL_SCAN_COOLDOWN_MS = 60 * 1000;
+import { PLANS } from '@/lib/stripe/plans';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,6 +32,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!repo) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('plan')
+    .eq('id', userId)
+    .single();
+
+  const plan = (profile?.plan ?? 'free') as keyof typeof PLANS;
+  const cooldownMs = PLANS[plan].manualScanCooldownMs;
+
   const { data: lastJob } = await supabase
     .from('job_runs')
     .select('triggered_at')
@@ -44,8 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (lastJob) {
     const elapsed = Date.now() - new Date(lastJob.triggered_at).getTime();
-    if (elapsed < MANUAL_SCAN_COOLDOWN_MS) {
-      const waitSec = Math.ceil((MANUAL_SCAN_COOLDOWN_MS - elapsed) / 1000);
+    if (elapsed < cooldownMs) {
+      const waitSec = Math.ceil((cooldownMs - elapsed) / 1000);
       return NextResponse.json({ error: `Rate limited. Try again in ${waitSec}s` }, { status: 429 });
     }
   }

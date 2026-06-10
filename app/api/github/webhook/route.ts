@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { verifyWebhookSignature } from '@/lib/github/webhook';
 import { createServiceClient } from '@/lib/supabase/server';
+import { PLANS } from '@/lib/stripe/plans';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -115,7 +116,41 @@ async function handleInstallation(supabase: Awaited<ReturnType<typeof createServ
       .eq('id', profile.id);
   }
 
+  const { data: profilePlan } = await supabase
+    .from('user_profiles')
+    .select('plan')
+    .eq('id', profile.id)
+    .single();
+
+  const plan = (profilePlan?.plan ?? 'free') as keyof typeof PLANS;
+  const maxRepos = PLANS[plan].maxRepos;
+
+  const { count: existingCount } = await supabase
+    .from('repositories')
+    .select('id', { count: 'exact', head: true })
+    .eq('owner_user_id', profile.id)
+    .eq('is_active', true);
+
+  let added = existingCount ?? 0;
+
   for (const r of repos) {
+    if (added >= maxRepos) break;
+
+    const { data: existing } = await supabase
+      .from('repositories')
+      .select('id, is_active')
+      .eq('github_repo_id', r.id as number)
+      .single();
+
+    // Don't count repos that are already tracked toward the limit
+    if (existing?.is_active) {
+      await supabase.from('repositories').update({
+        full_name: r.full_name as string,
+        is_active: true,
+      }).eq('id', existing.id);
+      continue;
+    }
+
     await supabase.from('repositories').upsert({
       github_repo_id: r.id as number,
       owner_user_id: profile.id,
@@ -123,6 +158,8 @@ async function handleInstallation(supabase: Awaited<ReturnType<typeof createServ
       default_branch: 'main',
       is_active: true,
     }, { onConflict: 'github_repo_id' });
+
+    added++;
   }
 }
 
