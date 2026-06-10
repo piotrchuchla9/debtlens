@@ -21,11 +21,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const maxDays = isPro ? days : Math.min(days, 90);
   const since = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000).toISOString();
 
+  // RLS enforces access (own repos + org member repos)
   const { data: repo } = await supabase
     .from('repositories')
     .select('id')
     .eq('id', id)
-    .eq('owner_user_id', user.id)
     .single();
 
   if (!repo) return NextResponse.json({ error: 'Not found' }, { status: 404 });

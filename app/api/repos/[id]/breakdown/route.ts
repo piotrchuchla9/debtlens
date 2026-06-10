@@ -11,11 +11,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { searchParams } = req.nextUrl;
   const sha = searchParams.get('sha');
 
+  // RLS enforces access (own repos + org member repos)
   const { data: repo } = await supabase
     .from('repositories')
     .select('id')
     .eq('id', id)
-    .eq('owner_user_id', user.id)
     .single();
 
   if (!repo) return NextResponse.json({ error: 'Not found' }, { status: 404 });

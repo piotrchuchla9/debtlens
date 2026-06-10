@@ -2,15 +2,22 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { syncOrgMemberships } from '@/lib/github/orgs';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 import { Toaster } from '@/components/ui/sonner';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) redirect('/login');
+  if (!session?.user) redirect('/login');
+  const user = session.user;
+
+  // Sync GitHub org memberships so team members see shared org repos
+  if (session.provider_token) {
+    await syncOrgMemberships(supabase, user.id, session.provider_token).catch(() => {});
+  }
 
   const { data: profile } = await supabase
     .from('user_profiles')
@@ -18,10 +25,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('id', user.id)
     .single();
 
+  // RLS now returns own repos + org member repos
   const { data: repos } = await supabase
     .from('repositories')
     .select('id, full_name')
-    .eq('owner_user_id', user.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 

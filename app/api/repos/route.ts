@@ -7,6 +7,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // RLS returns own repos + org member repos
   const { data: repos, error } = await supabase
     .from('repositories')
     .select(`
@@ -18,7 +19,6 @@ export async function GET() {
         id, status, triggered_at, commit_sha, commit_message
       )
     `)
-    .eq('owner_user_id', user.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 

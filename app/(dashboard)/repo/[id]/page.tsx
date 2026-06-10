@@ -19,11 +19,11 @@ export default async function RepoPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // RLS enforces visibility (own repos + org member repos)
   const { data: repo } = await supabase
     .from('repositories')
     .select('*')
     .eq('id', id)
-    .eq('owner_user_id', user.id)
     .single();
 
   if (!repo) notFound();

@@ -8,6 +8,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // RLS returns own repos + org member repos
   const { data: repos } = await supabase
     .from('repositories')
     .select(`
@@ -15,7 +16,6 @@ export default async function DashboardPage() {
       analysis_results(id, total_dead_code, unused_files_count, unused_exports_count, unused_deps_count, created_at),
       job_runs(id, status, triggered_at, commit_sha, commit_message)
     `)
-    .eq('owner_user_id', user!.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
