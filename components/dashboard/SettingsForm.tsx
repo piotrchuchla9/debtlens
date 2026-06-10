@@ -34,8 +34,7 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
       const alertPayload = {
         repo_id: repo.id,
         threshold_pct: parseInt(threshold, 10),
-        email_enabled: true,
-        slack_webhook_url: isPro && slackUrl ? slackUrl : null,
+        slack_webhook_url: isPro && slackUrl.trim() ? slackUrl.trim() : null,
       };
       if (alertConfig) {
         await supabase.from('alert_configs').update(alertPayload).eq('repo_id', repo.id);
