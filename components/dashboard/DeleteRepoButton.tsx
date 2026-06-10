@@ -14,7 +14,7 @@ export function DeleteRepoButton({ repoId, repoName }: { repoId: string; repoNam
     setLoading(true);
     const res = await fetch(`/api/repos/${repoId}`, { method: 'DELETE' });
     if (res.ok) {
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     } else {
       setLoading(false);
