@@ -21,10 +21,11 @@ export function TrendChart({ data, isPro, onPointClick }: TrendChartProps) {
     );
   }
 
-  const chartData = data.map(p => ({
+  const chartData = data.map((p, i) => ({
     ...p,
     label: shortSha(p.sha),
     dateLabel: formatDate(p.date),
+    idx: i,
   }));
 
   return (
@@ -37,7 +38,11 @@ export function TrendChart({ data, isPro, onPointClick }: TrendChartProps) {
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData} onClick={(e: any) => e?.activePayload?.[0] && onPointClick?.(e.activePayload[0].payload.sha)}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+          <XAxis
+            dataKey="idx"
+            tick={{ fontSize: 11 }}
+            tickFormatter={(val: number) => chartData[val]?.label ?? ''}
+          />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip
             content={({ active, payload }) => {
