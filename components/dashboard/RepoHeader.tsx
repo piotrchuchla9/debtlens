@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface RepoHeaderProps {
-  repo: { id: string; full_name: string; default_branch: string };
+  repo: { id: string; full_name: string; default_branch: string; scan_branch: string | null };
   latestJob: { id: string; status: string; triggered_at: string; commit_sha: string } | null;
   repoId: string;
 }
@@ -104,7 +104,7 @@ export function RepoHeader({ repo, latestJob, repoId }: RepoHeaderProps) {
           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
             <span className="flex items-center gap-1.5">
               <GitBranch className="h-3.5 w-3.5" />
-              {repo.default_branch}
+              {repo.scan_branch ?? repo.default_branch}
             </span>
             {latestJob && !scanning && (
               <span className="flex items-center gap-1.5">

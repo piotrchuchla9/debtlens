@@ -1,4 +1,4 @@
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { TrendingDown, TrendingUp, Minus, FileX, FunctionSquare, PackageX } from 'lucide-react';
 import { cn, formatNumber, healthColor } from '@/lib/utils';
 
 interface HealthScoreCardProps {
@@ -10,41 +10,46 @@ interface HealthScoreCardProps {
 }
 
 export function HealthScoreCard({ total, delta, files, exports, deps }: HealthScoreCardProps) {
-  const TrendIcon = delta === null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
-  const trendColor = delta === null || delta === 0
-    ? 'text-muted-foreground bg-muted'
-    : delta > 0
-    ? 'text-red-500 bg-red-500/10'
-    : 'text-green-500 bg-green-500/10';
+  const isNeutral = delta === null || delta === 0;
+  const isGood = delta !== null && delta < 0;
+
+  const TrendIcon = isNeutral ? Minus : isGood ? TrendingDown : TrendingUp;
+  const trendClass = isNeutral
+    ? 'text-muted-foreground bg-muted/60'
+    : isGood
+    ? 'text-green-500 bg-green-500/10'
+    : 'text-red-500 bg-red-500/10';
+
+  const stats = [
+    { label: 'Files',   value: files,   icon: FileX },
+    { label: 'Exports', value: exports, icon: FunctionSquare },
+    { label: 'Deps',    value: deps,    icon: PackageX },
+  ];
 
   return (
     <div className="rounded-xl border border-border/60 bg-card p-6">
-      <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        Total Dead Code
-      </div>
-
-      <div className="mt-3 flex items-end justify-between">
-        <span className={cn('text-5xl font-bold tabular-nums tracking-tight', healthColor(total))}>
-          {formatNumber(total)}
-        </span>
-
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">Total dead code</span>
         {delta !== null && (
-          <div className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', trendColor)}>
-            <TrendIcon className="h-3.5 w-3.5" />
-            <span>{delta > 0 ? `+${delta}` : delta === 0 ? '0' : delta}</span>
+          <div className={cn('flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold', trendClass)}>
+            <TrendIcon className="h-3 w-3" />
+            {delta > 0 ? `+${delta}` : delta === 0 ? '±0' : delta}
           </div>
         )}
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-2">
-        {[
-          { label: 'Files', value: files, color: 'text-orange-500' },
-          { label: 'Exports', value: exports, color: 'text-blue-500' },
-          { label: 'Deps', value: deps, color: 'text-red-500' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-lg bg-muted/50 px-3 py-2.5 text-center">
-            <div className={cn('text-xl font-bold tabular-nums', color)}>{value}</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">{label}</div>
+      <div className={cn('mt-3 text-6xl font-bold tabular-nums tracking-tight', healthColor(total))}>
+        {formatNumber(total)}
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 divide-x divide-border/60">
+        {stats.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="flex flex-col items-center gap-1 px-2 first:pl-0 last:pr-0">
+            <span className="text-2xl font-semibold tabular-nums text-foreground">{value}</span>
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Icon className="h-3 w-3" />
+              {label}
+            </span>
           </div>
         ))}
       </div>
