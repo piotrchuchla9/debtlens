@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, CreditCard, Home, GitBranch, ChevronRight, Loader2, CheckCircle2, AlertTriangle, XCircle, Circle } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, CreditCard, Home, ChevronRight, Loader2, CheckCircle2, AlertTriangle, XCircle, Circle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -35,6 +36,7 @@ interface SidebarProps {
 
 export function Sidebar({ repos = [], jobStatusByRepo = {} }: SidebarProps) {
   const pathname = usePathname();
+  const [query, setQuery] = useState('');
 
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-border/60 bg-card">
@@ -75,8 +77,20 @@ export function Sidebar({ repos = [], jobStatusByRepo = {} }: SidebarProps) {
             <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
               Repositories
             </div>
+            {repos.length > 5 && (
+              <div className="relative mb-1.5 px-1">
+                <Search className="absolute left-3.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  placeholder="Filter repos…"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  className="w-full rounded-md bg-muted/50 py-1.5 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+            )}
             <nav className="flex flex-col gap-0.5">
-              {repos.map(repo => {
+              {repos.filter(r => r.full_name.toLowerCase().includes(query.toLowerCase())).map(repo => {
                 const active = pathname.startsWith(`/repo/${repo.id}`);
                 const status = jobStatusByRepo[repo.id];
                 return (

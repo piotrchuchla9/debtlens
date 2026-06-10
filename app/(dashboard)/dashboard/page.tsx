@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { RepoCard } from '@/components/dashboard/RepoCard';
+import { RepoGrid } from '@/components/dashboard/RepoGrid';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
 import { RepositoryWithLatestAnalysis } from '@/types';
 
 export default async function DashboardPage() {
@@ -62,11 +61,7 @@ export default async function DashboardPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {enriched.map(repo => (
-            <RepoCard key={repo.id} repo={repo} />
-          ))}
-        </div>
+        <RepoGrid repos={enriched} />
       )}
     </div>
   );
