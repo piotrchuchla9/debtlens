@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
-  BarChart3, GitBranch, Bell, TrendingDown, Check,
+  BarChart3, Bell, TrendingDown, Check,
   ArrowRight, Zap, Shield, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,45 +92,70 @@ export default async function LandingPage() {
         {/* Dashboard preview */}
         <div className="relative mx-auto mt-16 max-w-4xl">
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-2xl shadow-black/10 dark:shadow-black/40">
-            <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/50 px-4 py-3">
+            {/* Browser chrome */}
+            <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/50 px-4 py-2.5">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
               <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
               <div className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-muted-foreground font-mono">debtlens.dev/repo/acme-frontend</span>
+              <span className="ml-3 text-xs text-muted-foreground font-mono">debtlens.live/repo/my-org/frontend</span>
             </div>
-            <div className="grid grid-cols-4 gap-0 p-6">
-              <div className="col-span-1 border-r border-border/40 pr-6 space-y-4">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repositories</div>
-                {['acme/frontend', 'acme/api', 'acme/mobile'].map((r, i) => (
-                  <div key={r} className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${i === 0 ? 'bg-accent font-medium' : 'text-muted-foreground'}`}>
-                    <GitBranch className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{r.split('/')[1]}</span>
+            {/* App shell: sidebar + main */}
+            <div className="flex h-[272px] text-left">
+              {/* Sidebar */}
+              <div className="w-44 shrink-0 border-r border-border/40 bg-muted/20 p-3 flex flex-col gap-1">
+                <div className="flex items-center gap-2 px-2 py-1 mb-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-primary">
+                    <BarChart3 className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                  <span className="text-sm font-semibold">DebtLens</span>
+                </div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-0.5">Repositories</div>
+                {[
+                  { name: 'frontend', active: true, dot: 'bg-yellow-500' },
+                  { name: 'api', active: false, dot: 'bg-green-500' },
+                  { name: 'mobile', active: false, dot: 'bg-muted-foreground/30' },
+                ].map(({ name, active, dot }) => (
+                  <div key={name} className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs ${active ? 'bg-accent font-medium' : 'text-muted-foreground'}`}>
+                    <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+                    {name}
                   </div>
                 ))}
               </div>
-              <div className="col-span-3 pl-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Total dead code</div>
-                    <div className="text-4xl font-bold text-yellow-500 tabular-nums">142</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground">Last scan</div>
-                    <div className="text-sm font-medium">2 min ago</div>
-                  </div>
-                </div>
-                <div className="h-28 w-full rounded-lg bg-muted/40 flex items-end gap-1 px-2 pb-2 overflow-hidden">
-                  {[60, 80, 72, 95, 110, 130, 142, 138, 125, 118, 130, 142].map((v, i) => (
-                    <div key={i} className="flex-1 rounded-t" style={{ height: `${(v / 160) * 100}%`, backgroundColor: i === 11 ? 'rgb(234 179 8 / 0.8)' : 'rgb(99 102 241 / 0.4)' }} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[['Files', '23', 'text-orange-400'], ['Exports', '89', 'text-blue-400'], ['Deps', '30', 'text-red-400']].map(([l, v, c]) => (
-                    <div key={l} className="rounded-lg bg-muted/40 px-3 py-2 text-center">
-                      <div className={`text-xl font-bold tabular-nums ${c}`}>{v}</div>
-                      <div className="text-xs text-muted-foreground">{l}</div>
+              {/* Main content */}
+              <div className="flex-1 overflow-hidden bg-background p-4 space-y-3">
+                <div className="text-sm font-semibold">my-org / frontend</div>
+                {/* Health score card */}
+                <div className="rounded-lg border border-border/60 bg-card p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-muted-foreground">Total dead code</span>
+                    <div className="flex items-center gap-0.5 rounded-full bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-500">
+                      <TrendingDown className="h-2.5 w-2.5" />
+                      -5
                     </div>
-                  ))}
+                  </div>
+                  <div className="text-4xl font-bold tabular-nums text-yellow-500 mb-2">34</div>
+                  <div className="grid grid-cols-3 divide-x divide-border/60 text-center">
+                    {[['8', 'Files'], ['21', 'Exports'], ['5', 'Deps']].map(([v, l]) => (
+                      <div key={l} className="flex flex-col items-center px-2">
+                        <span className="text-sm font-semibold tabular-nums">{v}</span>
+                        <span className="text-[10px] text-muted-foreground">{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Trend chart */}
+                <div className="rounded-lg border border-border/60 bg-card p-3">
+                  <div className="text-[11px] font-semibold mb-1.5">Dead Code Trend</div>
+                  <svg viewBox="0 0 300 48" className="w-full h-12" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="lp-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(99,102,241)" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="rgb(99,102,241)" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,4 L33,12 L67,6 L100,15 L133,20 L167,24 L200,30 L233,36 L267,40 L300,44 L300,48 L0,48 Z" fill="url(#lp-grad)" />
+                    <polyline points="0,4 33,12 67,6 100,15 133,20 167,24 200,30 233,36 267,40 300,44" fill="none" stroke="rgb(99,102,241)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
               </div>
             </div>
