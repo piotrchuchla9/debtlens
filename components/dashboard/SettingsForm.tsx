@@ -16,6 +16,21 @@ interface SettingsFormProps {
   isPro: boolean;
 }
 
+function TestAlertButton({ repoId }: { repoId: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'ok' | 'err'>('idle');
+  async function send() {
+    setState('sending');
+    const res = await fetch(`/api/repos/${repoId}/test-alert`, { method: 'POST' });
+    setState(res.ok ? 'ok' : 'err');
+    setTimeout(() => setState('idle'), 3000);
+  }
+  return (
+    <Button type="button" variant="outline" size="sm" onClick={send} disabled={state === 'sending'} className="shrink-0">
+      {state === 'sending' ? 'Sending…' : state === 'ok' ? '✓ Sent' : state === 'err' ? 'Failed' : 'Test'}
+    </Button>
+  );
+}
+
 export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
   const [scanBranch, setScanBranch] = useState(repo.scan_branch ?? '');
   const [threshold, setThreshold] = useState(String(alertConfig?.threshold_pct ?? 5));
@@ -97,13 +112,18 @@ export function SettingsForm({ repo, alertConfig, isPro }: SettingsFormProps) {
           {isPro ? (
             <div className="space-y-2">
               <Label htmlFor="slack">Slack webhook URL</Label>
-              <Input
-                id="slack"
-                type="url"
-                placeholder="https://hooks.slack.com/services/..."
-                value={slackUrl}
-                onChange={e => setSlackUrl(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="slack"
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={slackUrl}
+                  onChange={e => setSlackUrl(e.target.value)}
+                />
+                {alertConfig?.slack_webhook_url && (
+                  <TestAlertButton repoId={repo.id} />
+                )}
+              </div>
             </div>
           ) : (
             <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
