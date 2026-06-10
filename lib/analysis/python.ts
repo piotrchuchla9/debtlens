@@ -1,6 +1,5 @@
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
-import { spawn } from 'child_process';
+import { readFile, readdir } from 'fs/promises';
+import { join, relative } from 'path';
 import { ExportEntry } from '@/types';
 
 export interface PythonAnalysisResult {
@@ -9,146 +8,107 @@ export interface PythonAnalysisResult {
   unusedFiles: string[];
 }
 
-// Embedded Python script — uses only stdlib (ast, os, sys, json, re)
-const PYTHON_SCRIPT = `
-import ast, os, sys, json, re
+const IGNORE_DIRS = new Set(['__pycache__', '.git', 'venv', 'env', '.venv', '.tox', 'node_modules', 'dist', 'build', '.mypy_cache', '.pytest_cache']);
 
-IGNORE_DIRS = {'__pycache__', '.git', 'venv', 'env', '.venv', '.tox', 'node_modules', 'dist', 'build', '.mypy_cache'}
+async function findPyFiles(dir: string, result: string[] = []): Promise<string[]> {
+  if (result.length >= 300) return result;
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return result;
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (!IGNORE_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+        await findPyFiles(join(dir, entry.name), result);
+      }
+    } else if (entry.isFile() && entry.name.endsWith('.py')) {
+      result.push(join(dir, entry.name));
+    }
+  }
+  return result;
+}
 
-def find_py_files(root):
-    result = []
-    for dirpath, dirs, files in os.walk(root):
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith('.')]
-        for f in files:
-            if f.endswith('.py'):
-                result.append(os.path.join(dirpath, f))
-    return result[:300]  # cap to avoid timeouts
+function extractImports(source: string): Set<string> {
+  const imports = new Set<string>();
+  for (const m of source.matchAll(/^import\s+([\w.]+)/gm)) {
+    imports.add(m[1].split('.')[0].toLowerCase());
+  }
+  for (const m of source.matchAll(/^from\s+([\w.]+)\s+import/gm)) {
+    imports.add(m[1].split('.')[0].toLowerCase());
+  }
+  return imports;
+}
 
-def get_imports(filepath):
-    try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            source = f.read()
-        tree = ast.parse(source, filename=filepath)
-        imports = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.add(alias.name.split('.')[0].lower())
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.add(node.module.split('.')[0].lower())
-        return imports
-    except:
-        return set()
+function extractTopLevelDefs(source: string): Array<{ name: string; line: number; type: string }> {
+  const defs: Array<{ name: string; line: number; type: string }> = [];
+  const lines = source.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fnMatch = line.match(/^def\s+([A-Za-z][A-Za-z0-9_]*)\s*\(/);
+    if (fnMatch) defs.push({ name: fnMatch[1], line: i + 1, type: 'function' });
+    const clsMatch = line.match(/^class\s+([A-Za-z][A-Za-z0-9_]*)\s*[:(]/);
+    if (clsMatch) defs.push({ name: clsMatch[1], line: i + 1, type: 'class' });
+  }
+  return defs;
+}
 
-def get_top_level_defs(filepath):
-    try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            source = f.read()
-        tree = ast.parse(source, filename=filepath)
-        result = []
-        for node in tree.body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                if not node.name.startswith('_'):
-                    result.append({'name': node.name, 'line': node.lineno, 'type': 'function'})
-            elif isinstance(node, ast.ClassDef):
-                if not node.name.startswith('_'):
-                    result.append({'name': node.name, 'line': node.lineno, 'type': 'class'})
-        return result
-    except:
-        return []
-
-def parse_requirements(root):
-    reqs = set()
-    for fname in ['requirements.txt', 'requirements-dev.txt', 'requirements/base.txt']:
-        path = os.path.join(root, fname)
-        if os.path.exists(path):
-            with open(path, 'r', errors='ignore') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#') and not line.startswith('-') and not line.startswith('http'):
-                        pkg = re.split(r'[>=<!;\\[\\s]', line)[0].strip().lower().replace('-', '_')
-                        if pkg:
-                            reqs.add(pkg)
-    return reqs
-
-root = sys.argv[1]
-py_files = find_py_files(root)
-
-all_imports = set()
-file_defs = {}
-
-for filepath in py_files:
-    imports = get_imports(filepath)
-    all_imports.update(imports)
-    defs = get_top_level_defs(filepath)
-    if defs:
-        file_defs[filepath] = defs
-
-reqs = parse_requirements(root)
-unused_deps = [r for r in reqs if r not in all_imports and r.replace('_', '-') not in all_imports]
-
-# Build full text corpus for cross-file reference check
-full_text = ''
-for fp in py_files:
-    try:
-        with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
-            full_text += f.read() + '\\n'
-    except:
-        pass
-
-unused_exports = []
-for filepath, defs in list(file_defs.items())[:50]:
-    rel = os.path.relpath(filepath, root)
-    for d in defs:
-        name = d['name']
-        count = len(re.findall(r'\\b' + re.escape(name) + r'\\b', full_text))
-        if count <= 1:
-            unused_exports.append({'name': name, 'file': rel, 'type': d['type']})
-
-print(json.dumps({
-    'unused_deps': unused_deps[:30],
-    'unused_exports': unused_exports[:50],
-    'unused_files': []
-}))
-`;
-
-function runPython(scriptPath: string, workDir: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let stdout = '';
-    let stderr = '';
-    const proc = spawn('python3', [scriptPath, workDir], {
-      env: { ...process.env, HOME: '/tmp' },
-    });
-    proc.stdout.on('data', (c: Buffer) => (stdout += c.toString()));
-    proc.stderr.on('data', (c: Buffer) => (stderr += c.toString()));
-    proc.on('close', () => resolve(stdout));
-    proc.on('error', reject);
-  });
+async function parseRequirements(root: string): Promise<Set<string>> {
+  const reqs = new Set<string>();
+  for (const fname of ['requirements.txt', 'requirements-dev.txt', 'requirements/base.txt']) {
+    try {
+      const content = await readFile(join(root, fname), 'utf-8');
+      for (const raw of content.split('\n')) {
+        const line = raw.trim();
+        if (!line || line.startsWith('#') || line.startsWith('-') || line.startsWith('http')) continue;
+        const pkg = line.split(/[>=<!;\s[]/)[0].trim().toLowerCase().replace(/-/g, '_');
+        if (pkg) reqs.add(pkg);
+      }
+    } catch {}
+  }
+  return reqs;
 }
 
 export async function analyzePython(workDir: string): Promise<PythonAnalysisResult> {
-  const scriptPath = join('/tmp', 'debtlens_python_analyzer.py');
+  const pyFiles = await findPyFiles(workDir);
 
-  try {
-    await writeFile(scriptPath, PYTHON_SCRIPT, 'utf-8');
-    const output = await runPython(scriptPath, workDir);
-    const jsonStart = output.indexOf('{');
-    if (jsonStart === -1) return { unusedDeps: [], unusedExports: [], unusedFiles: [] };
+  const allImports = new Set<string>();
+  const fileDefs = new Map<string, Array<{ name: string; line: number; type: string }>>();
+  const sources: string[] = [];
 
-    const parsed = JSON.parse(output.slice(jsonStart));
-    return {
-      unusedDeps: parsed.unused_deps ?? [],
-      unusedExports: (parsed.unused_exports ?? []).map((e: { name: string; file: string; type: string }) => ({
-        name: e.name,
-        file: e.file,
-        type: e.type,
-      })),
-      unusedFiles: parsed.unused_files ?? [],
-    };
-  } catch {
-    return { unusedDeps: [], unusedExports: [], unusedFiles: [] };
-  } finally {
-    await unlink(scriptPath).catch(() => {});
+  for (const filepath of pyFiles) {
+    try {
+      const source = await readFile(filepath, 'utf-8');
+      sources.push(source);
+      for (const imp of extractImports(source)) allImports.add(imp);
+      const defs = extractTopLevelDefs(source);
+      if (defs.length > 0) fileDefs.set(filepath, defs);
+    } catch {}
   }
+
+  const fullText = sources.join('\n');
+
+  const reqs = await parseRequirements(workDir);
+  const unusedDeps = [...reqs].filter(r => !allImports.has(r) && !allImports.has(r.replace(/_/g, '-')));
+
+  const unusedExports: ExportEntry[] = [];
+  let fileCount = 0;
+  for (const [filepath, defs] of fileDefs) {
+    if (fileCount++ >= 50) break;
+    const rel = relative(workDir, filepath);
+    for (const def of defs) {
+      const escaped = def.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const count = (fullText.match(new RegExp(`\\b${escaped}\\b`, 'g')) ?? []).length;
+      if (count <= 1) {
+        unusedExports.push({ name: def.name, file: rel, type: def.type, line: def.line });
+      }
+    }
+  }
+
+  return {
+    unusedDeps: unusedDeps.slice(0, 30),
+    unusedExports: unusedExports.slice(0, 50),
+    unusedFiles: [],
+  };
 }
