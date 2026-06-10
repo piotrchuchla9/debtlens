@@ -6,7 +6,6 @@ import { detectLanguages } from './detect';
 import { analyzePython } from './python';
 import { analyzeGo } from './golang';
 
-const EMPTY_KNIP_OUTPUT: KnipOutput = { files: [], issues: [] };
 
 const DEFAULT_KNIP_CONFIG = JSON.stringify({
   ignore: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**', 'supabase/functions/**', 'supabase/migrations/**'],
@@ -26,7 +25,7 @@ export async function runAnalysis(
 ): Promise<{ output: KnipOutput; version: string; languages: string[] }> {
   const langs = await detectLanguages(workDir);
   const languages: string[] = [];
-  let merged: KnipOutput = { ...EMPTY_KNIP_OUTPUT };
+  let merged: KnipOutput = { files: [], issues: [] };
   let version = 'multi';
 
   const tasks: Promise<void>[] = [];
@@ -92,7 +91,7 @@ export async function runAnalysis(
   // Fallback: treat as JS if nothing detected
   if (languages.length === 0) {
     languages.push('js');
-    const { output, version: v } = await runKnip(workDir, configOverride).catch(() => ({ output: EMPTY_KNIP_OUTPUT, version: '5.x' }));
+    const { output, version: v } = await runKnip(workDir, configOverride).catch(() => ({ output: { files: [], issues: [] } as KnipOutput, version: '5.x' }));
     merged = output;
     version = v;
   } else {
