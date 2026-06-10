@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { verifyWebhookSignature } from '@/lib/github/webhook';
 import { createServiceClient } from '@/lib/supabase/server';
 
@@ -55,14 +56,14 @@ async function handlePush(supabase: Awaited<ReturnType<typeof createServiceClien
 
   if (job) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-    fetch(`${appUrl}/api/repos/${repo.id}/scan`, {
+    waitUntil(fetch(`${appUrl}/api/repos/${repo.id}/scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-internal-secret': process.env.INTERNAL_JOB_SECRET ?? '',
       },
       body: JSON.stringify({ job_run_id: job.id }),
-    }).catch(() => {});
+    }).catch(() => {}));
   }
 }
 
