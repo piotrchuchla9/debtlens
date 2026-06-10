@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
   BarChart3, GitBranch, Bell, TrendingDown, Check,
@@ -6,8 +7,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { createClient } from '@/lib/supabase/server';
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect('/dashboard');
+
   return (
     <div className="min-h-screen bg-background">
 
